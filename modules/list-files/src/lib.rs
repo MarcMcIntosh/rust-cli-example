@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::ReadDir, path::PathBuf};
+use std::{collections::HashSet, fs::ReadDir, os::unix::ffi::OsStrExt, path::PathBuf};
 
 #[derive(Debug, Clone, Default)]
 struct Entity {
@@ -58,18 +58,29 @@ where T: IntoIterator + FromIterator<T::Item> {
 
 
 
+// TODO: figure out how to do this on windows :/
+fn is_hidden(path: PathBuf) -> bool {
+    path
+      .file_prefix()
+      .is_some_and(|file_name| {
+        file_name.as_bytes().first() == Some(&b'.')
+      })
+}
+
+
 // TODO: would pointers be more efficient for seen and results?
 fn list_path_recursive(
     path: PathBuf,
     depth: u32,
+    all: bool,
     seen: HashSet<PathBuf>,
 ) -> Vec<PathBuf>{
-    if seen.contains(&path) {
+
+    if all == false && is_hidden(path.clone()) {
         return Vec::<PathBuf>::new();
-    }
-
-
-    if depth == 0 || path.is_file() {
+    } else if seen.contains(&path) {
+        return Vec::<PathBuf>::new();
+    } else if depth == 0 || path.is_file() {
         return Vec::from([path]);
     }
 
@@ -79,18 +90,18 @@ fn list_path_recursive(
     let children = root.children()
     .into_iter()
     .flat_map(|entity| {
-       list_path_recursive(entity.root, depth -1, next_seen.clone())
+       list_path_recursive(entity.root, depth -1, all, next_seen.clone())
     }).collect::<Vec<PathBuf>>();
 
-    return concat(Vec::<PathBuf>::from([root.root]), children);
+    return  children;
 }
 
 
 // TBD: support stdout / stderr pipe?
-pub fn ls(path: PathBuf, recurse: bool) -> Vec<PathBuf> {
+pub fn ls(path: PathBuf, recurse: bool, all: bool) -> Vec<PathBuf> {
     let depth = if recurse {u32::MAX} else {1};
     let seen = HashSet::<PathBuf>::new();
-    list_path_recursive(path, depth, seen)
+    list_path_recursive(path, depth, all, seen)
 }
 
 

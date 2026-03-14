@@ -11,13 +11,15 @@ struct Cli {
     path: String,
     #[arg(long, short, default_value_t = false)]
     recursive: bool,
+    #[arg[long, short, default_value_t = false]]
+    all: bool,
 }
 
 fn main() {
     let cli = Cli::parse();
     let path = Path::new(&cli.path).to_path_buf();
 
-    ls(path, cli.recursive).iter().for_each(|f| {
+    ls(path, cli.recursive, cli.all).iter().for_each(|f| {
         println!("{:?}", f.as_os_str());
     });
 }
