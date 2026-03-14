@@ -59,6 +59,7 @@ where T: IntoIterator + FromIterator<T::Item> {
 
 
 // TODO: figure out how to do this on windows :/
+// https://rust-lang.github.io/rustup/cross-compilation.html
 fn is_hidden(path: PathBuf) -> bool {
     path
       .file_prefix()
